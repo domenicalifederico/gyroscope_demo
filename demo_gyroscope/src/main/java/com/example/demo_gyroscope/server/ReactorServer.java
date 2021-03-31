@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import net.jodah.concurrentunit.Waiter;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -43,7 +44,7 @@ public class ReactorServer {
     
     
     @PostConstruct
-    public void init() {
+    public void init() throws InterruptedException {
     	Flux<OrientationData> flux = Flux.create(emitter -> {
     		inDataChannel.subscribe(msg -> emitter.next( OrientationData.class.cast( msg.getPayload() )));
     	});
@@ -57,6 +58,7 @@ public class ReactorServer {
     	hot.connect();
     	
     	System.out.println("server initalized");
+ 
     }
     
     @GetMapping(path = "/orientation", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -73,7 +75,7 @@ public class ReactorServer {
 
     }
 
-    @PostMapping(path = "/orientation")
+    @PutMapping(path = "/orientation")
     public void addOrientation(@RequestBody OrientationData orientationData) {
 
         LOG.info("add orientation - HTTP PUT CALLED {}", orientationData);
