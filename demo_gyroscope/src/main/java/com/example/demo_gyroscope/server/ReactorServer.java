@@ -33,8 +33,8 @@ public class ReactorServer {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(ReactorServer.class);
 
-    private SubscribableChannel outDataChannel = MessageChannels.publishSubscribe().get();
-    private SubscribableChannel inDataChannel = MessageChannels.publishSubscribe().get();
+    private SubscribableChannel outChannel = MessageChannels.publishSubscribe().get();
+    private SubscribableChannel inChannel = MessageChannels.publishSubscribe().get();
     
     public ReactorServer() {
     	
@@ -46,14 +46,14 @@ public class ReactorServer {
     @PostConstruct
     public void init() throws InterruptedException {
     	Flux<OrientationData> flux = Flux.create(emitter -> {
-    		inDataChannel.subscribe(msg -> emitter.next( OrientationData.class.cast( msg.getPayload() )));
+    		inChannel.subscribe(msg -> emitter.next( OrientationData.class.cast( msg.getPayload() )));
     	}, FluxSink.OverflowStrategy.LATEST);
 
-    	flux = flux.buffer(Duration.ofSeconds(3)).map(OrientationData::average);
+    	flux = flux.buffer(Duration.ofSeconds(5)).map(OrientationData::average);
     	
     	ConnectableFlux<OrientationData> hot = flux.publish();
     	
-    	hot.subscribe(orientationData -> outDataChannel.send(new GenericMessage<>(orientationData)));
+    	hot.subscribe(orientationData -> outChannel.send(new GenericMessage<>(orientationData)));
     	
     	hot.connect();
     	
@@ -64,13 +64,13 @@ public class ReactorServer {
     @GetMapping(path = "/orientation", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<OrientationData> getOrientation() {
 
-        LOG.info("get orientation - HTTP GET CALLED");
+        LOG.info("HTTP GET CALLED");
         System.out.println("get orientation data..");
 
         return Flux.create( sink -> {
             MessageHandler handler = msg -> sink.next(OrientationData.class.cast(msg.getPayload()));
-            sink.onDispose(() -> outDataChannel.unsubscribe(handler));
-            outDataChannel.subscribe(handler);
+            sink.onDispose(() -> outChannel.unsubscribe(handler));
+            outChannel.subscribe(handler);
         });
 
     }
@@ -78,10 +78,10 @@ public class ReactorServer {
     @PutMapping(path = "/orientation")
     public void addOrientation(@RequestBody OrientationData orientationData) {
 
-        LOG.info("add orientation - HTTP PUT CALLED {}", orientationData);
+        LOG.info("HTTP PUT CALLED {}", orientationData);
         System.out.println("add orientation data..");
 
-        inDataChannel.send(new GenericMessage<>(orientationData));
+        inChannel.send(new GenericMessage<>(orientationData));
 
     }
 
