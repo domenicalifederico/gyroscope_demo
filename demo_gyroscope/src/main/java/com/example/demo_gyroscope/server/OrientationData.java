@@ -61,7 +61,7 @@ public class OrientationData {
     	result.x = result.x / data.size();
     	result.y = result.y / data.size();
     	result.z = result.z / data.size();
-    	LOG.info("calculating average");
+    	LOG.info("calculating average: {}", result.toString());
     	return result;
     }
 }

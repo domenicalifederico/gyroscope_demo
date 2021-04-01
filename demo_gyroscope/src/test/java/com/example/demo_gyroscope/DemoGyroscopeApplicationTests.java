@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +25,7 @@ import com.example.demo_gyroscope.server.OrientationData;
 import com.example.demo_gyroscope.server.ReactorServer;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 @RunWith(SpringRunner.class)
@@ -36,6 +38,9 @@ class DemoGyroscopeApplicationTests {
 
 	@Test
 	public void testSendOrientation() throws TimeoutException, InterruptedException {
+        Hooks.onErrorDropped(error -> {
+            LOGGER.warn("An error has occured {}", error);
+        });
 		OrientationData data = new OrientationData(1,1,1);
 		OrientationData data2 = new OrientationData(10,10,10);
 		this.webTestClient.mutate().responseTimeout(Duration.ofMillis(30000));

@@ -47,10 +47,10 @@ public class ReactorServer {
     public void init() throws InterruptedException {
     	Flux<OrientationData> flux = Flux.create(emitter -> {
     		inDataChannel.subscribe(msg -> emitter.next( OrientationData.class.cast( msg.getPayload() )));
-    	});
+    	}, FluxSink.OverflowStrategy.LATEST);
 
     	flux = flux.buffer(Duration.ofSeconds(3)).map(OrientationData::average);
-
+    	
     	ConnectableFlux<OrientationData> hot = flux.publish();
     	
     	hot.subscribe(orientationData -> outDataChannel.send(new GenericMessage<>(orientationData)));
@@ -68,8 +68,8 @@ public class ReactorServer {
         System.out.println("get orientation data..");
 
         return Flux.create( sink -> {
-            FluxSink<OrientationData> fsink = sink;
-            MessageHandler handler = msg -> fsink.next(OrientationData.class.cast(msg.getPayload()));;
+            MessageHandler handler = msg -> sink.next(OrientationData.class.cast(msg.getPayload()));
+            sink.onDispose(() -> outDataChannel.unsubscribe(handler));
             outDataChannel.subscribe(handler);
         });
 
